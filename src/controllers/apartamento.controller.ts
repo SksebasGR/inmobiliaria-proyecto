@@ -1,30 +1,27 @@
+import {authenticate} from '@loopback/authentication';
 import {
   Count,
   CountSchema,
   Filter,
   FilterExcludingWhere,
   repository,
-  Where,
+  Where
 } from '@loopback/repository';
 import {
-  post,
-  param,
-  get,
-  getModelSchemaRef,
-  patch,
-  put,
-  del,
-  requestBody,
-  response,
+  del, get,
+  getModelSchemaRef, param, patch, post, put, requestBody,
+  response
 } from '@loopback/rest';
 import {Apartamento} from '../models';
 import {ApartamentoRepository} from '../repositories';
 
+@authenticate('admin')
 export class ApartamentoController {
   constructor(
     @repository(ApartamentoRepository)
     public apartamentoRepository : ApartamentoRepository,
   ) {}
+
 
   @post('/apartamentos')
   @response(200, {
@@ -57,7 +54,7 @@ export class ApartamentoController {
   ): Promise<Count> {
     return this.apartamentoRepository.count(where);
   }
-
+  @authenticate.skip()
   @get('/apartamentos')
   @response(200, {
     description: 'Array of Apartamento model instances',

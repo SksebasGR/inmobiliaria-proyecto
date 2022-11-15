@@ -1,7 +1,7 @@
-import {Entity, model, property, hasMany, hasOne} from '@loopback/repository';
+import {Entity, hasMany, hasOne, model, property} from '@loopback/repository';
 import {Apartamento} from './apartamento.model';
-import {Roles} from './roles.model';
 import {Factura} from './factura.model';
+import {Roles} from './roles.model';
 
 @model()
 export class Persona extends Entity {

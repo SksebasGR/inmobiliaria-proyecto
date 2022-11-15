@@ -1,30 +1,52 @@
+import {service} from '@loopback/core';
 import {
   Count,
   CountSchema,
   Filter,
   FilterExcludingWhere,
   repository,
-  Where,
+  Where
 } from '@loopback/repository';
 import {
-  post,
-  param,
-  get,
-  getModelSchemaRef,
-  patch,
-  put,
-  del,
-  requestBody,
-  response,
+  del, get,
+  getModelSchemaRef, param, patch, post, put, requestBody,
+  response
 } from '@loopback/rest';
-import {Persona} from '../models';
+import {Credenciales, Persona} from '../models';
 import {PersonaRepository} from '../repositories';
+import {AutenticacionService} from '../services/autenticacion.service';
+const fetch = require('cross-fetch');
+
 
 export class PersonaController {
   constructor(
     @repository(PersonaRepository)
     public personaRepository : PersonaRepository,
+
+    @service(AutenticacionService )
+    public autenticacionservice : AutenticacionService
   ) {}
+
+  @post('/validar-acceso')
+  @response(200, {
+    description: 'validar las credenciales del usuario'
+  })
+  async validarAcceso(
+    @requestBody()credenciales:Credenciales
+  ){
+    const per = await this.autenticacionservice.validarAcceso(credenciales.usuario,credenciales.clave);
+    if(per){
+      const token = this.autenticacionservice.generarTokenJWT(per);
+      return {
+        datos:{
+          id: per.id,
+          nombre: per.nombreCompleto,
+          correo: per.correo
+        },
+        token:token
+      }
+    }
+  }
 
   @post('/personas')
   @response(200, {
@@ -44,7 +66,25 @@ export class PersonaController {
     })
     persona: Omit<Persona, 'id'>,
   ): Promise<Persona> {
-    return this.personaRepository.create(persona);
+
+    //const clave = this.autenticacionservice.generarClave();
+    const clave = persona.clave;
+
+    const claveCifrada = this.autenticacionservice.cifrarClave(clave);
+    persona.clave = claveCifrada;
+    const p = await this.personaRepository.create(persona);
+
+    const correo = persona.correo;
+    const asunto = 'Registro exitoso';
+    const mensaje = `Hola ${persona.nombreCompleto}, su nombre de usuario es ${persona.correo}, y su contraseña es ${clave}`;
+
+    fetch(`http://127.0.0.1:5000/enviar-correo?correo=${correo}&asunto=${asunto}&mensaje=${mensaje}`)
+      .then((m: string)=>console.log(m))
+      .then((data: string) =>{
+        console.log(data);
+      })
+      return p;
+
   }
 
   @get('/personas/count')
